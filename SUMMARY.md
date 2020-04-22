@@ -1,4 +1,4 @@
 # Table of contents
 
-* [Initial page](README.md)
+* [Bài 5: Giới thiệu về xử lý ảnh \| Deep Learning cơ bản](README.md)
 
