@@ -2,15 +2,7 @@
 
 This tutorial focuses on the task of image segmentation, using a modified [U-Net](https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/).
 
-## What is image segmentation? <a id="what_is_image_segmentation"></a>
 
-So far you have seen image classification, where the task of the network is to assign a label or class to an input image. However, suppose you want to know where an object is located in the image, the shape of that object, which pixel belongs to which object, etc. In this case you will want to segment the image, i.e., each pixel of the image is given a label. Thus, the task of image segmentation is to train a neural network to output a pixel-wise mask of the image. This helps in understanding the image at a much lower level, i.e., the pixel level. Image segmentation has many applications in medical imaging, self-driving cars and satellite imaging to name a few.
-
-The dataset that will be used for this tutorial is the Oxford-IIIT Pet Dataset, created by Parkhi _et al_. The dataset consists of images, their corresponding labels, and pixel-wise masks. The masks are basically labels for each pixel. Each pixel is given one of three categories :
-
-* Class 1 : Pixel belonging to the pet.
-* Class 2 : Pixel bordering the pet.
-* Class 3 : None of the above/ Surrounding pixel.
 
 ```text
 pip install -q git+https://github.com/tensorflow/examples.git
@@ -28,12 +20,8 @@ import tensorflow_datasets as tfds
 tfds.disable_progress_bar()
 
 from IPython.display import clear_output
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt.
 ```
-
-## Download the Oxford-IIIT Pets dataset <a id="download_the_oxford-iiit_pets_dataset"></a>
-
-The dataset is already included in TensorFlow datasets, all that is needed to do is download it. The segmentation masks are included in version 3+.
 
 ```text
 dataset, info = tfds.load('oxford_iiit_pet:3.*.*', with_info=True)
@@ -46,8 +34,6 @@ Shuffling and writing examples to /home/kbuilder/tensorflow_datasets/oxford_iiit
 Dataset oxford_iiit_pet downloaded and prepared to /home/kbuilder/tensorflow_datasets/oxford_iiit_pet/3.2.0. Subsequent calls will reuse this data.
 
 ```
-
-The following code performs a simple augmentation of flipping an image. In addition, image is normalized to \[0,1\]. Finally, as mentioned above the pixels in the segmentation mask are labeled either {1, 2, 3}. For the sake of convenience, let's subtract 1 from the segmentation mask, resulting in labels that are : {0, 1, 2}.
 
 ```text
 def normalize(input_image, input_mask):
@@ -81,8 +67,6 @@ def load_image_test(datapoint):
   return input_image, input_mask
 ```
 
-The dataset already contains the required splits of test and train and so let's continue to use the same split.
-
 ```text
 TRAIN_LENGTH = info.splits['train'].num_examples
 BATCH_SIZE = 64
@@ -100,8 +84,6 @@ train_dataset = train.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
 train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 test_dataset = test.batch(BATCH_SIZE)
 ```
-
-Let's take a look at an image example and it's correponding mask from the dataset.
 
 ```text
 def display(display_list):
@@ -125,17 +107,9 @@ display([sample_image, sample_mask])
 
 ![png](https://www.tensorflow.org/tutorials/images/segmentation_files/output_a6u_Rblkteqb_0.png?hl=vi)
 
-## Define the model <a id="define_the_model"></a>
-
-The model being used here is a modified U-Net. A U-Net consists of an encoder \(downsampler\) and decoder \(upsampler\). In-order to learn robust features, and reduce the number of trainable parameters, a pretrained model can be used as the encoder. Thus, the encoder for this task will be a pretrained MobileNetV2 model, whose intermediate outputs will be used, and the decoder will be the upsample block already implemented in TensorFlow Examples in the [Pix2pix tutorial](https://github.com/tensorflow/examples/blob/master/tensorflow_examples/models/pix2pix/pix2pix.py).
-
-The reason to output three channels is because there are three possible labels for each pixel. Think of this as multi-classification where each pixel is being classified into three classes.
-
 ```text
 OUTPUT_CHANNELS = 3
 ```
-
-As mentioned, the encoder will be a pretrained MobileNetV2 model which is prepared and ready to use in [tf.keras.applications](https://www.tensorflow.org/versions/r2.0/api_docs/python/tf/keras/applications?hl=vi). The encoder consists of specific outputs from intermediate layers in the model. Note that the encoder will not be trained during the training process.
 
 ```text
 base_model = tf.keras.applications.MobileNetV2(input_shape=[128, 128, 3], include_top=False)
@@ -161,8 +135,6 @@ Downloading data from https://github.com/JonathanCMitchell/mobilenet_v2_keras/re
 9412608/9406464 [==============================] - 2s 0us/step
 
 ```
-
-The decoder/upsampler is simply a series of upsample blocks implemented in TensorFlow examples.
 
 ```text
 up_stack = [
@@ -199,10 +171,6 @@ def unet_model(output_channels):
   return tf.keras.Model(inputs=inputs, outputs=x)
 ```
 
-## Train the model <a id="train_the_model"></a>
-
-Now, all that is left to do is to compile and train the model. The loss being used here is [`losses.SparseCategoricalCrossentropy(from_logits=True)`](https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy?hl=vi). The reason to use this loss function is because the network is trying to assign each pixel a label, just like multi-class prediction. In the true segmentation mask, each pixel has either a {0,1,2}. The network here is outputting three channels. Essentially, each channel is trying to learn to predict a class, and [`losses.SparseCategoricalCrossentropy(from_logits=True)`](https://www.tensorflow.org/api_docs/python/tf/keras/losses/SparseCategoricalCrossentropy?hl=vi) is the recommended loss for such a scenario. Using the output of the network, the label assigned to the pixel is the channel with the highest value. This is what the create\_mask function is doing.
-
 ```text
 model = unet_model(OUTPUT_CHANNELS)
 model.compile(optimizer='adam',
@@ -210,15 +178,11 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 ```
 
-Have a quick look at the resulting model architecture:
-
 ```text
 tf.keras.utils.plot_model(model, show_shapes=True)
 ```
 
 ![png](https://www.tensorflow.org/tutorials/images/segmentation_files/output_sw82qF1Gcovr_0.png?hl=vi)
-
-Let's try out the model to see what it predicts before training.
 
 ```text
 def create_mask(pred_mask):
@@ -243,8 +207,6 @@ show_predictions()
 ```
 
 ![png](https://www.tensorflow.org/tutorials/images/segmentation_files/output_X_1CC0T4dho3_0.png?hl=vi)
-
-Let's observe how the model improves while it is training. To accomplish this task, a callback function is defined below.
 
 ```text
 class DisplayCallback(tf.keras.callbacks.Callback):
@@ -294,9 +256,7 @@ plt.show()
 
 ![png](https://www.tensorflow.org/tutorials/images/segmentation_files/output_P_mu0SAbt40Q_0.png?hl=vi)
 
-## Make predictions <a id="make_predictions"></a>
 
-Let's make some predictions. In the interest of saving time, the number of epochs was kept small, but you may set this higher to achieve more accurate results.
 
 ```text
 show_predictions(test_dataset, 3)
@@ -307,10 +267,4 @@ show_predictions(test_dataset, 3)
 ![png](https://www.tensorflow.org/tutorials/images/segmentation_files/output_ikrzoG24qwf5_1.png?hl=vi)
 
 ![png](https://www.tensorflow.org/tutorials/images/segmentation_files/output_ikrzoG24qwf5_2.png?hl=vi)
-
-## Next steps <a id="next_steps"></a>
-
-Now that you have an understanding of what image segmentation is and how it works, you can try this tutorial out with different intermediate layer outputs, or even different pretrained model. You may also challenge yourself by trying out the [Carvana](https://www.kaggle.com/c/carvana-image-masking-challenge/overview) image masking challenge hosted on Kaggle.
-
-You may also want to see the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) for another model you can retrain on your own data.
 
